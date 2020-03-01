@@ -6,5 +6,6 @@ require (
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/viper v1.6.2
+	github.com/texttheater/golang-levenshtein v0.0.0-20191208221605-eb6844b05fc6
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 )

@@ -28,17 +28,17 @@ func main() {
 		fmt.Printf("Unable to setup seedbox session: %s\n", err.Error())
 	}
 
-	/*playerSession, err := modules.GetSSHSession(viper.GetStringMap("player"))
+	playerSession, err := modules.GetSSHSession(viper.GetStringMap("player"))
 	if err != nil {
 		fmt.Printf("Unable to setup player session: %v", err)
-	}*/
+	}
 
 	db, err := modules.GetDB()
 	if err != nil {
 		fmt.Printf("Unable to open DB: %s\n", err.Error())
 	}
 
-	contents, err := modules.GetContentsFromSeedbox(seedBoxSession, viper.GetStringMap("seedbox")["dir"].(string))
+	contents, err := modules.GetContentsFromHost(seedBoxSession, viper.GetStringMap("seedbox")["dir"].(string))
 	if err != nil {
 		fmt.Printf("Unable to get seedbox contents: %s\n", err.Error())
 	}
@@ -46,6 +46,11 @@ func main() {
 	filtered, err := modules.FilterDownloadedContents(contents, db)
 	if err != nil {
 		fmt.Printf("Error filtering contents: %s\n", err.Error())
+	}
+
+	filtered, err = modules.FillDestinationDirectories(playerSession, viper.GetStringMap("player")["dir"].(string), filtered)
+	if err != nil {
+		fmt.Printf("Error finding destionation contents: %s\n", err.Error())
 	}
 
 	fmt.Println(filtered)

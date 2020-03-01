@@ -27,7 +27,7 @@ func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.C
 	defer stmt.Close()
 
 	for _, item := range contents {
-		if re.MatchString(item.FullPath) {
+		if re.MatchString(item.ItemName) {
 			hash := md5.Sum([]byte(item.FullPath))
 			err := stmt.QueryRow(hex.EncodeToString(hash[:])).Scan(&res)
 			if err != nil {
@@ -43,8 +43,8 @@ func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.C
 	return filtered, nil
 }
 
-// GetContentsFromSeedbox parses LS output to produce a curated list of contents
-func GetContentsFromSeedbox(session *ssh.Session, dir string) ([]domain.Content, error) {
+// GetContentsFromHost parses LS output to produce a curated list of contents
+func GetContentsFromHost(session *ssh.Session, dir string) ([]domain.Content, error) {
 	var output bytes.Buffer
 	var contents []domain.Content
 
@@ -68,6 +68,7 @@ func GetContentsFromSeedbox(session *ssh.Session, dir string) ([]domain.Content,
 
 		contents = append(contents, domain.Content{
 			IsDirectory: isDir,
+			ItemName:    item[:len(item)-1],
 			FullPath:    dir + item,
 		})
 	}
