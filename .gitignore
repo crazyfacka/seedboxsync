@@ -1,5 +1,6 @@
 .seedboxsync
 keys/
+sample.db
 
 # Binaries for programs and plugins
 *.exe

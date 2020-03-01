@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/crazyfacka/seedboxsync/modules"
@@ -25,30 +23,28 @@ func main() {
 	b, _ := json.MarshalIndent(viper.AllSettings(), "", "  ")
 	fmt.Println(string(b))
 
-	seedboxConfs := viper.Get("seedbox").(map[string]interface{})
-	playerConfs := viper.Get("player").(map[string]interface{})
-
-	seedBoxSession, err := modules.GetSSHSession(seedboxConfs)
+	seedBoxSession, err := modules.GetSSHSession(viper.GetStringMap("seedbox"))
 	if err != nil {
-		fmt.Printf("Unable to setup seedbox session: %v", err)
+		fmt.Printf("Unable to setup seedbox session: %s\n", err.Error())
 	}
 
-	playerSession, err := modules.GetSSHSession(playerConfs)
+	/*playerSession, err := modules.GetSSHSession(viper.GetStringMap("player"))
 	if err != nil {
 		fmt.Printf("Unable to setup player session: %v", err)
+	}*/
+
+	db, err := modules.GetDB()
+	if err != nil {
+		fmt.Printf("Unable to open DB: %s\n", err.Error())
 	}
 
-	var output bytes.Buffer
-	seedBoxSession.Stdout = &output
-	playerSession.Stdout = &output
-
-	if err := seedBoxSession.Run("ls"); err != nil {
-		log.Fatal("Failed to run: " + err.Error())
+	contents, err := modules.GetContentsFromSeedbox(seedBoxSession, viper.GetStringMap("seedbox")["dir"].(string))
+	if err != nil {
+		fmt.Printf("Unable to get seedbox contents: %s\n", err.Error())
 	}
-	fmt.Println(output.String())
 
-	if err := playerSession.Run("ls"); err != nil {
-		log.Fatal("Failed to run: " + err.Error())
-	}
-	fmt.Println(output.String())
+	modules.FilterDownloadedContents(&contents, db)
+	fmt.Println(contents)
+
+	modules.CloseDB()
 }
