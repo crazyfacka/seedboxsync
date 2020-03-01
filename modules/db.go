@@ -10,7 +10,7 @@ var dbConn *sql.DB
 
 // GetDB returns a DB connection instance
 func GetDB() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "file:storage.db?cache=shared&mode=memory")
+	db, err := sql.Open("sqlite3", "./storage.db?cache=shared&mode=memory")
 	if err != nil {
 		return nil, err
 	}

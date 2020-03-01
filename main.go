@@ -43,8 +43,12 @@ func main() {
 		fmt.Printf("Unable to get seedbox contents: %s\n", err.Error())
 	}
 
-	modules.FilterDownloadedContents(&contents, db)
-	fmt.Println(contents)
+	filtered, err := modules.FilterDownloadedContents(contents, db)
+	if err != nil {
+		fmt.Printf("Error filtering contents: %s\n", err.Error())
+	}
+
+	fmt.Println(filtered)
 
 	modules.CloseDB()
 }

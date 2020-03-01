@@ -2,7 +2,9 @@ package modules
 
 import (
 	"bytes"
+	"crypto/md5"
 	"database/sql"
+	"encoding/hex"
 	"strings"
 
 	"github.com/crazyfacka/seedboxsync/domain"
@@ -10,8 +12,30 @@ import (
 )
 
 // FilterDownloadedContents filters the array and leaves only the contents to download
-func FilterDownloadedContents(contents *[]domain.Content, db *sql.DB) {
+func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.Content, error) {
+	var res int
+	var filtered []domain.Content
 
+	stmt, err := db.Prepare("SELECT COUNT(1) FROM downloaded WHERE hash = ?")
+	if err != nil {
+		return nil, err
+	}
+
+	defer stmt.Close()
+
+	for _, item := range contents {
+		hash := md5.Sum([]byte(item.FullPath))
+		err := stmt.QueryRow(hex.EncodeToString(hash[:])).Scan(&res)
+		if err != nil {
+			return nil, err
+		}
+
+		if res == 0 {
+			filtered = append(filtered, item)
+		}
+	}
+
+	return filtered, nil
 }
 
 // GetContentsFromSeedbox parses LS output to produce a curated list of contents
