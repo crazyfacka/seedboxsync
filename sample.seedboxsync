@@ -1,0 +1,16 @@
+{
+  "seedbox": {
+    "host": "example.com",
+    "port": 2222,
+    "user": "example",
+    "key": "keys/seedbox",
+    "dir": "/home/example/downloads"
+  },
+  "player": {
+    "host": "player.example.com",
+    "port": 22,
+    "user": "player",
+    "key": "keys/player",
+    "dir": "/home/example/series"
+  }
+}
