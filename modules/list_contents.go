@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
+	"regexp"
 	"strings"
 
 	"github.com/crazyfacka/seedboxsync/domain"
@@ -16,6 +17,8 @@ func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.C
 	var res int
 	var filtered []domain.Content
 
+	re := regexp.MustCompile(`(?i)s[0-9]+e[0-9]+`)
+
 	stmt, err := db.Prepare("SELECT COUNT(1) FROM downloaded WHERE hash = ?")
 	if err != nil {
 		return nil, err
@@ -24,14 +27,16 @@ func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.C
 	defer stmt.Close()
 
 	for _, item := range contents {
-		hash := md5.Sum([]byte(item.FullPath))
-		err := stmt.QueryRow(hex.EncodeToString(hash[:])).Scan(&res)
-		if err != nil {
-			return nil, err
-		}
+		if re.MatchString(item.FullPath) {
+			hash := md5.Sum([]byte(item.FullPath))
+			err := stmt.QueryRow(hex.EncodeToString(hash[:])).Scan(&res)
+			if err != nil {
+				return nil, err
+			}
 
-		if res == 0 {
-			filtered = append(filtered, item)
+			if res == 0 {
+				filtered = append(filtered, item)
+			}
 		}
 	}
 
