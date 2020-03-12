@@ -25,8 +25,8 @@ func publicKeyFile(file string) ssh.AuthMethod {
 	return ssh.PublicKeys(key)
 }
 
-// GetSSHSession returns a valid SSH session
-func GetSSHSession(confs map[string]interface{}) (*ssh.Session, error) {
+// GetSSHConn returns a valid SSH connection
+func GetSSHConn(confs map[string]interface{}) (*ssh.Client, error) {
 	host := confs["host"].(string)
 	port := int(confs["port"].(float64))
 	user := confs["user"].(string)
@@ -55,10 +55,5 @@ func GetSSHSession(confs map[string]interface{}) (*ssh.Session, error) {
 		return nil, err
 	}
 
-	session, err := conn.NewSession()
-	if err != nil {
-		return nil, err
-	}
-
-	return session, nil
+	return conn, nil
 }

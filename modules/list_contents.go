@@ -44,14 +44,20 @@ func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.C
 }
 
 // GetContentsFromHost parses LS output to produce a curated list of contents
-func GetContentsFromHost(session *ssh.Session, dir string) ([]domain.Content, error) {
+func GetContentsFromHost(conn *ssh.Client, dir string) ([]domain.Content, error) {
 	var output bytes.Buffer
 	var contents []domain.Content
 
 	var isDir bool
+	var itemName string
 
 	if dir[len(dir)-1:] != "/" {
 		dir += "/"
+	}
+
+	session, err := conn.NewSession()
+	if err != nil {
+		return nil, err
 	}
 
 	session.Stdout = &output
@@ -61,14 +67,17 @@ func GetContentsFromHost(session *ssh.Session, dir string) ([]domain.Content, er
 
 	items := strings.Split(strings.TrimSpace(output.String()), "\n")
 	for _, item := range items {
-		isDir = false
 		if item[len(item)-1:] == "/" {
 			isDir = true
+			itemName = item[:len(item)-1]
+		} else {
+			isDir = false
+			itemName = item
 		}
 
 		contents = append(contents, domain.Content{
 			IsDirectory: isDir,
-			ItemName:    item[:len(item)-1],
+			ItemName:    itemName,
 			FullPath:    dir + item,
 		})
 	}

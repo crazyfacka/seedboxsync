@@ -11,8 +11,8 @@ import (
 )
 
 // FillDestinationDirectories finds the directories in the destination that match the sources
-func FillDestinationDirectories(session *ssh.Session, dir string, source []domain.Content) ([]domain.Content, error) {
-	contents, err := GetContentsFromHost(session, dir)
+func FillDestinationDirectories(conn *ssh.Client, dir string, source []domain.Content) ([]domain.Content, error) {
+	contents, err := GetContentsFromHost(conn, dir)
 	if err != nil {
 		return nil, err
 	}
