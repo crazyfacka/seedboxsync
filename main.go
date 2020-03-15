@@ -53,7 +53,7 @@ func main() {
 		fmt.Printf("Error finding destionation contents: %s\n", err.Error())
 	}
 
-	err = modules.ProcessItems(seedboxConn, filtered)
+	err = modules.ProcessItems(seedboxConn, filtered, viper.GetStringMap("seedbox")["temp_dir"].(string))
 	if err != nil {
 		fmt.Printf("Error processing contents: %s\n", err.Error())
 	}
