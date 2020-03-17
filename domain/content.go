@@ -6,4 +6,5 @@ type Content struct {
 	ItemName        string
 	FullPath        string
 	DestinationPath string
+	MediaContent    []string
 }

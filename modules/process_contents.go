@@ -1,14 +1,48 @@
 package modules
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/crazyfacka/seedboxsync/domain"
 	"golang.org/x/crypto/ssh"
 )
 
+func getRarMedia(conn *ssh.Client, content *domain.Content) error {
+	var output bytes.Buffer
+
+	session, err := conn.NewSession()
+	if err != nil {
+		return err
+	}
+
+	session.Stdout = &output
+	cmd := "unrar lb \"" + content.FullPath + "\""
+	if err := session.Run(cmd); err != nil {
+		return err
+	}
+
+	re := regexp.MustCompile(`(?i).*\.(mp4|mkv)`)
+	items := strings.Split(strings.TrimSpace(output.String()), "\n")
+	for _, item := range items {
+		if re.MatchString(item) {
+			content.MediaContent = append(content.MediaContent, item)
+		}
+	}
+
+	return nil
+}
+
 func extractRar(conn *ssh.Client, content domain.Content, tempDir string) error {
+	err := getRarMedia(conn, &content)
+	fmt.Println(content)
+
+	if err != nil {
+		return err
+	}
+
 	session, err := conn.NewSession()
 	if err != nil {
 		return err
