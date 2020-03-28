@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -35,6 +36,7 @@ func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.C
 			}
 
 			if res == 0 {
+				fmt.Printf("Adding '%s' to queue\n", item.ItemName)
 				filtered = append(filtered, item)
 			}
 		}
