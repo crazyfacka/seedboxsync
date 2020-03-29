@@ -94,16 +94,22 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 			fmt.Printf("[DRY] %s\n", cmd)
 			time.Sleep(5 * time.Second)
 			fmt.Printf("[DRY] Copying %s complete\n", content.ItemName)
-			wg.Add(1)
-			filesToDelete <- tempDir + "/" + media
+
+			if filesToDelete != nil {
+				wg.Add(1)
+				filesToDelete <- tempDir + "/" + media
+			}
 		} else {
 			if err := session.Run(cmd); err != nil {
 				fmt.Printf("Error executing '%s': %s\n", cmd, err.Error())
 			} else {
 				fmt.Printf("Copying %s complete\n", content.ItemName)
 				// TODO Store hash in DB
-				wg.Add(1)
-				filesToDelete <- tempDir + "/" + media
+
+				if filesToDelete != nil {
+					wg.Add(1)
+					filesToDelete <- tempDir + "/" + media
+				}
 			}
 		}
 	}
@@ -114,6 +120,7 @@ func ProcessItems(b *domain.Bundle) error {
 	var wg sync.WaitGroup
 
 	rar := regexp.MustCompile(`(?i).*\.rar`)
+	mkv := regexp.MustCompile(`(?i).*\.mkv`)
 	zip := regexp.MustCompile(`(?i).*\.zip`)
 
 	filesToDelete := make(chan string, 2)
@@ -137,6 +144,10 @@ func ProcessItems(b *domain.Bundle) error {
 					wg.Add(1)
 					c.MediaContent = f.MediaContent
 					go transferData(b.Player, c, b.TempDir, filesToDelete, &wg, b.DryRun)
+				} else if mkv.MatchString(f.ItemName) {
+					wg.Add(1)
+					c.MediaContent = []string{f.ItemName}
+					go transferData(b.Player, c, c.FullPath[:len(c.FullPath)-1], nil, &wg, b.DryRun)
 				} else if zip.MatchString(f.ItemName) {
 					fmt.Println("zip", f)
 					continue
