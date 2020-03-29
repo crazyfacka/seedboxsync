@@ -13,7 +13,6 @@ import (
 
 func deleteWhatsComplete(conn *ssh.Client, files chan string, wg *sync.WaitGroup) {
 	for file := range files {
-		wg.Add(1)
 		fmt.Printf("Deleting '%s'\n", file)
 
 		session, err := conn.NewSession()
@@ -94,6 +93,7 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 		} else {
 			fmt.Printf("Copying %s complete\n", content.ItemName)
 			// TODO Store hash in DB
+			wg.Add(1)
 			filesToDelete <- tempDir + "/" + media
 		}
 	}
