@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/crazyfacka/seedboxsync/domain"
 	"github.com/crazyfacka/seedboxsync/modules"
 	"github.com/spf13/viper"
 )
@@ -26,35 +27,50 @@ func main() {
 	seedboxConn, err := modules.GetSSHConn(viper.GetStringMap("seedbox"))
 	if err != nil {
 		fmt.Printf("Unable to setup seedbox session: %s\n", err.Error())
+		return
 	}
 
 	playerConn, err := modules.GetSSHConn(viper.GetStringMap("player"))
 	if err != nil {
 		fmt.Printf("Unable to setup player session: %v", err)
+		return
 	}
 
 	db, err := modules.GetDB()
 	if err != nil {
 		fmt.Printf("Unable to open DB: %s\n", err.Error())
+		return
 	}
 
-	contents, err := modules.GetContentsFromHost(seedboxConn, viper.GetStringMap("seedbox")["dir"].(string))
+	bundle := &domain.Bundle{
+		Seedbox:    seedboxConn,
+		Player:     playerConn,
+		DB:         db,
+		SeedboxDir: viper.GetStringMap("seedbox")["dir"].(string),
+		PlayerDir:  viper.GetStringMap("player")["dir"].(string),
+		TempDir:    viper.GetStringMap("seedbox")["temp_dir"].(string),
+		DryRun:     false,
+	}
+
+	contents, err := modules.GetContentsFromHost(bundle.Seedbox, bundle.SeedboxDir)
 	if err != nil {
 		fmt.Printf("Unable to get seedbox contents: %s\n", err.Error())
 	}
 
+	bundle.Contents = contents
+
 	fmt.Println("== Contents ==")
-	filtered, err := modules.FilterDownloadedContents(contents, db)
+	err = modules.FilterDownloadedContents(bundle)
 	if err != nil {
 		fmt.Printf("Error filtering contents: %s\n", err.Error())
 	}
 
-	filtered, err = modules.FillDestinationDirectories(playerConn, viper.GetStringMap("player")["dir"].(string), filtered)
+	err = modules.FillDestinationDirectories(bundle)
 	if err != nil {
 		fmt.Printf("Error finding destionation contents: %s\n", err.Error())
 	}
 
-	err = modules.ProcessItems(seedboxConn, playerConn, filtered, viper.GetStringMap("seedbox")["temp_dir"].(string))
+	err = modules.ProcessItems(bundle)
 	if err != nil {
 		fmt.Printf("Error processing contents: %s\n", err.Error())
 	}

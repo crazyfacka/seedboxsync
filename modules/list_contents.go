@@ -3,7 +3,6 @@ package modules
 import (
 	"bytes"
 	"crypto/md5"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"regexp"
@@ -14,25 +13,25 @@ import (
 )
 
 // FilterDownloadedContents filters the array and leaves only the contents to download
-func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.Content, error) {
+func FilterDownloadedContents(b *domain.Bundle) error {
 	var res int
 	var filtered []domain.Content
 
 	re := regexp.MustCompile(`(?i)s[0-9]+e[0-9]+`)
 
-	stmt, err := db.Prepare("SELECT COUNT(1) FROM downloaded WHERE hash = ?")
+	stmt, err := b.DB.Prepare("SELECT COUNT(1) FROM downloaded WHERE hash = ?")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer stmt.Close()
 
-	for _, item := range contents {
+	for _, item := range b.Contents {
 		if re.MatchString(item.ItemName) {
 			hash := md5.Sum([]byte(item.FullPath))
 			err := stmt.QueryRow(hex.EncodeToString(hash[:])).Scan(&res)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			if res == 0 {
@@ -42,7 +41,8 @@ func FilterDownloadedContents(contents []domain.Content, db *sql.DB) ([]domain.C
 		}
 	}
 
-	return filtered, nil
+	b.Contents = filtered
+	return nil
 }
 
 // GetContentsFromHost parses LS output to produce a curated list of contents

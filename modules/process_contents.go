@@ -100,25 +100,25 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 }
 
 // ProcessItems will extract what's to be extracted and copy what's to be copied
-func ProcessItems(seedbox *ssh.Client, player *ssh.Client, contents []domain.Content, tempDir string) error {
+func ProcessItems(b *domain.Bundle) error {
 	var wg sync.WaitGroup
 
 	rar := regexp.MustCompile(`(?i).*\.rar`)
 	zip := regexp.MustCompile(`(?i).*\.zip`)
 
 	filesToDelete := make(chan string)
-	go deleteWhatsComplete(seedbox, filesToDelete, &wg)
+	go deleteWhatsComplete(b.Seedbox, filesToDelete, &wg)
 
-	for _, c := range contents {
+	for _, c := range b.Contents {
 		if c.IsDirectory {
-			files, err := GetContentsFromHost(seedbox, c.FullPath)
+			files, err := GetContentsFromHost(b.Seedbox, c.FullPath)
 			if err != nil {
 				fmt.Printf("Error processing %s: %s\n", c.ItemName, err.Error())
 			}
 
 			for _, f := range files {
 				if rar.MatchString(f.ItemName) {
-					err = extractRar(seedbox, &f, tempDir)
+					err = extractRar(b.Seedbox, &f, b.TempDir)
 					if err != nil {
 						fmt.Printf("Error processing %s: %s\n", c.ItemName, err.Error())
 						continue
@@ -126,7 +126,7 @@ func ProcessItems(seedbox *ssh.Client, player *ssh.Client, contents []domain.Con
 
 					wg.Add(1)
 					c.MediaContent = f.MediaContent
-					go transferData(player, c, tempDir, filesToDelete, &wg)
+					go transferData(b.Player, c, b.TempDir, filesToDelete, &wg)
 				} else if zip.MatchString(f.ItemName) {
 					fmt.Println("zip", f)
 					continue
