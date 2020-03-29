@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/crazyfacka/seedboxsync/domain"
 	"golang.org/x/crypto/ssh"
@@ -76,7 +77,7 @@ func extractRar(conn *ssh.Client, content *domain.Content, tempDir string) error
 	return nil
 }
 
-func transferData(conn *ssh.Client, content domain.Content, tempDir string, filesToDelete chan string, wg *sync.WaitGroup) {
+func transferData(conn *ssh.Client, content domain.Content, tempDir string, filesToDelete chan string, wg *sync.WaitGroup, dryrun bool) {
 	defer wg.Done()
 
 	for _, media := range content.MediaContent {
@@ -86,15 +87,24 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 			return
 		}
 
-		fmt.Printf("Copying '%s'...\n", content.ItemName)
 		cmd := "mkdir -p \"" + content.DestinationPath + "\" ; scp -rP 2211 crazyfacka@joagonca.com:\"" + tempDir + "/" + media + "\" \"" + content.DestinationPath + "\""
-		if err := session.Run(cmd); err != nil {
-			fmt.Printf("Error executing '%s': %s\n", cmd, err.Error())
-		} else {
-			fmt.Printf("Copying %s complete\n", content.ItemName)
-			// TODO Store hash in DB
+
+		if dryrun {
+			fmt.Printf("[DRY] Copying '%s'...\n", content.ItemName)
+			fmt.Printf("[DRY] %s\n", cmd)
+			time.Sleep(5 * time.Second)
+			fmt.Printf("[DRY] Copying %s complete\n", content.ItemName)
 			wg.Add(1)
 			filesToDelete <- tempDir + "/" + media
+		} else {
+			if err := session.Run(cmd); err != nil {
+				fmt.Printf("Error executing '%s': %s\n", cmd, err.Error())
+			} else {
+				fmt.Printf("Copying %s complete\n", content.ItemName)
+				// TODO Store hash in DB
+				wg.Add(1)
+				filesToDelete <- tempDir + "/" + media
+			}
 		}
 	}
 }
@@ -106,7 +116,7 @@ func ProcessItems(b *domain.Bundle) error {
 	rar := regexp.MustCompile(`(?i).*\.rar`)
 	zip := regexp.MustCompile(`(?i).*\.zip`)
 
-	filesToDelete := make(chan string)
+	filesToDelete := make(chan string, 2)
 	go deleteWhatsComplete(b.Seedbox, filesToDelete, &wg)
 
 	for _, c := range b.Contents {
@@ -126,17 +136,17 @@ func ProcessItems(b *domain.Bundle) error {
 
 					wg.Add(1)
 					c.MediaContent = f.MediaContent
-					go transferData(b.Player, c, b.TempDir, filesToDelete, &wg)
+					go transferData(b.Player, c, b.TempDir, filesToDelete, &wg, b.DryRun)
 				} else if zip.MatchString(f.ItemName) {
 					fmt.Println("zip", f)
 					continue
 				}
 			}
 		}
-
-		wg.Wait()
-		close(filesToDelete)
 	}
+
+	wg.Wait()
+	close(filesToDelete)
 
 	return nil
 }

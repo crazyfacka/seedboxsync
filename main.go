@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 
@@ -14,6 +15,9 @@ func main() {
 	viper.SetConfigName(".seedboxsync")
 	viper.SetConfigType("json")
 	viper.AddConfigPath(".")
+
+	dryrun := flag.Bool("dry", false, "doesn't transfer data from seedbox to player")
+	flag.Parse()
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("Error reading config file: %s\n", err.Error())
@@ -49,7 +53,7 @@ func main() {
 		SeedboxDir: viper.GetStringMap("seedbox")["dir"].(string),
 		PlayerDir:  viper.GetStringMap("player")["dir"].(string),
 		TempDir:    viper.GetStringMap("seedbox")["temp_dir"].(string),
-		DryRun:     false,
+		DryRun:     *dryrun,
 	}
 
 	contents, err := modules.GetContentsFromHost(bundle.Seedbox, bundle.SeedboxDir)
