@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/crazyfacka/seedboxsync/domain"
+	"github.com/crazyfacka/seedboxsync/handler"
 	"github.com/crazyfacka/seedboxsync/modules"
 	"github.com/spf13/viper"
 )
@@ -56,7 +57,7 @@ func main() {
 		DryRun:     *dryrun,
 	}
 
-	contents, err := modules.GetContentsFromHost(bundle.Seedbox, bundle.SeedboxDir)
+	contents, err := handler.GetContentsFromHost(bundle.Seedbox, bundle.SeedboxDir)
 	if err != nil {
 		fmt.Printf("Unable to get seedbox contents: %s\n", err.Error())
 	}
@@ -64,17 +65,17 @@ func main() {
 	bundle.Contents = contents
 
 	fmt.Println("== Contents ==")
-	err = modules.FilterDownloadedContents(bundle)
+	err = handler.FilterDownloadedContents(bundle)
 	if err != nil {
 		fmt.Printf("Error filtering contents: %s\n", err.Error())
 	}
 
-	err = modules.FillDestinationDirectories(bundle)
+	err = handler.FillDestinationDirectories(bundle)
 	if err != nil {
 		fmt.Printf("Error finding destionation contents: %s\n", err.Error())
 	}
 
-	err = modules.ProcessItems(bundle)
+	err = handler.ProcessItems(bundle)
 	if err != nil {
 		fmt.Printf("Error processing contents: %s\n", err.Error())
 	}
