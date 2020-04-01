@@ -81,5 +81,11 @@ func main() {
 	}
 
 	modules.CloseDB()
+
+	err = handler.RefreshLibrary(viper.GetStringMap("player")["host"].(string))
+	if err != nil {
+		fmt.Printf("Error refreshing library: %s\n", err.Error())
+	}
+
 	fmt.Println("Done")
 }
