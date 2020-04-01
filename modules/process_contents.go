@@ -69,7 +69,7 @@ func extractRar(conn *ssh.Client, content *domain.Content, tempDir string) error
 	}
 
 	fmt.Printf("Extracting '%s'\n", content.ItemName)
-	cmd := "unrar e \"" + content.FullPath + "\" \"" + tempDir + "\""
+	cmd := "unrar e -y \"" + content.FullPath + "\" \"" + tempDir + "\""
 	if err := session.Run(cmd); err != nil {
 		return err
 	}
