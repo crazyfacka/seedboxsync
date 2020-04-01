@@ -2,6 +2,9 @@ package handler
 
 import (
 	"bytes"
+	"crypto/md5"
+	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"regexp"
 	"strings"
@@ -26,6 +29,30 @@ func deleteWhatsComplete(conn *ssh.Client, files chan string, wg *sync.WaitGroup
 		cmd := "rm \"" + file + "\""
 		if err := session.Run(cmd); err != nil {
 			fmt.Printf("Error executing '%s': %s\n", cmd, err.Error())
+		}
+
+		wg.Done()
+	}
+}
+
+func storeHashInDB(db *sql.DB, data chan string, wg *sync.WaitGroup) {
+	stmt, err := db.Prepare("INSERT INTO downloaded(hash) VALUES(?)")
+	if err != nil {
+		fmt.Printf("Error creating statement: %s\n", err.Error())
+		return
+	}
+
+	defer stmt.Close()
+
+	for d := range data {
+		fmt.Printf("Hashing '%s'\n", d)
+
+		hash := md5.Sum([]byte(d))
+		_, err = stmt.Exec(hex.EncodeToString(hash[:]))
+		if err != nil {
+			fmt.Printf("Error executing query: %s\n", err.Error())
+			wg.Done()
+			continue
 		}
 
 		wg.Done()
@@ -77,7 +104,7 @@ func extractRar(conn *ssh.Client, content *domain.Content, tempDir string) error
 	return nil
 }
 
-func transferData(conn *ssh.Client, content domain.Content, tempDir string, filesToDelete chan string, wg *sync.WaitGroup, dryrun bool) {
+func transferData(conn *ssh.Client, content domain.Content, tempDir string, filesToDelete chan string, toHash chan string, wg *sync.WaitGroup, dryrun bool) {
 	defer wg.Done()
 
 	for _, media := range content.MediaContent {
@@ -95,6 +122,8 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 			time.Sleep(5 * time.Second)
 			fmt.Printf("[DRY] Copying %s complete\n", content.ItemName)
 
+			wg.Add(1)
+			toHash <- content.FullPath
 			if filesToDelete != nil {
 				wg.Add(1)
 				filesToDelete <- tempDir + "/" + media
@@ -104,7 +133,8 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 				fmt.Printf("Error executing '%s': %s\n", cmd, err.Error())
 			} else {
 				fmt.Printf("Copying %s complete\n", content.ItemName)
-				// TODO Store hash in DB
+				wg.Add(1)
+				toHash <- content.FullPath
 
 				if filesToDelete != nil {
 					wg.Add(1)
@@ -124,7 +154,9 @@ func ProcessItems(b *domain.Bundle) error {
 	zip := regexp.MustCompile(`(?i).*\.zip`)
 
 	filesToDelete := make(chan string, 2)
+	toHash := make(chan string, 2)
 	go deleteWhatsComplete(b.Seedbox, filesToDelete, &wg)
+	go storeHashInDB(b.DB, toHash, &wg)
 
 	for _, c := range b.Contents {
 		if c.IsDirectory {
@@ -143,11 +175,11 @@ func ProcessItems(b *domain.Bundle) error {
 
 					wg.Add(1)
 					c.MediaContent = f.MediaContent
-					go transferData(b.Player, c, b.TempDir, filesToDelete, &wg, b.DryRun)
+					go transferData(b.Player, c, b.TempDir, filesToDelete, toHash, &wg, b.DryRun)
 				} else if mkv.MatchString(f.ItemName) {
 					wg.Add(1)
 					c.MediaContent = []string{f.ItemName}
-					go transferData(b.Player, c, c.FullPath[:len(c.FullPath)-1], nil, &wg, b.DryRun)
+					go transferData(b.Player, c, c.FullPath[:len(c.FullPath)-1], nil, toHash, &wg, b.DryRun)
 				} else if zip.MatchString(f.ItemName) {
 					fmt.Println("zip", f)
 					continue
@@ -158,6 +190,7 @@ func ProcessItems(b *domain.Bundle) error {
 
 	wg.Wait()
 	close(filesToDelete)
+	close(toHash)
 
 	return nil
 }
