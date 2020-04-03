@@ -4,7 +4,8 @@
     "port": 2222,
     "user": "example",
     "key": "keys/seedbox",
-    "dir": "/home/example/downloads"
+    "dir": "/home/example/downloads",
+    "temp_dir": "/temp"
   },
   "player": {
     "host": "player.example.com",
