@@ -2,6 +2,8 @@
 
 Tool that syncs downloaded series from a seedbox, to a local player.
 
+It scans the source directory for valid series to copy over. On the player, it scans for folders that resemble the series name by running the levenshtein algorithm against the folder names. If the season directory does not exist, it is created.
+
 ## Requirements
 
 You'll need:
