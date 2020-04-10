@@ -5,30 +5,30 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
-	"fmt"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/crazyfacka/seedboxsync/domain"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 )
 
 func deleteWhatsComplete(conn *ssh.Client, files chan string, wg *sync.WaitGroup) {
 	for file := range files {
-		fmt.Printf("Deleting '%s'\n", file)
+		log.Info().Str("file", file).Msg("Deleting")
 
 		session, err := conn.NewSession()
 		if err != nil {
-			fmt.Printf("Error creating new session: %s\n", err.Error())
+			log.Error().Err(err).Msg("Error creating new session")
 			wg.Done()
 			continue
 		}
 
 		cmd := "rm \"" + file + "\""
 		if err := session.Run(cmd); err != nil {
-			fmt.Printf("Error executing '%s': %s\n", cmd, err.Error())
+			log.Error().Str("cmd", cmd).Err(err).Msg("Error executing")
 		}
 
 		wg.Done()
@@ -38,19 +38,19 @@ func deleteWhatsComplete(conn *ssh.Client, files chan string, wg *sync.WaitGroup
 func storeHashInDB(db *sql.DB, data chan string, wg *sync.WaitGroup) {
 	stmt, err := db.Prepare("INSERT INTO downloaded(hash) VALUES(?)")
 	if err != nil {
-		fmt.Printf("Error creating statement: %s\n", err.Error())
+		log.Error().Err(err).Msg("Error creating statement")
 		return
 	}
 
 	defer stmt.Close()
 
 	for d := range data {
-		fmt.Printf("Hashing '%s'\n", d)
+		log.Info().Str("data", d).Msg("Hashing")
 
 		hash := md5.Sum([]byte(d))
 		_, err = stmt.Exec(hex.EncodeToString(hash[:]))
 		if err != nil {
-			fmt.Printf("Error executing query: %s\n", err.Error())
+			log.Error().Err(err).Msg("Error executing query")
 			wg.Done()
 			continue
 		}
@@ -95,7 +95,7 @@ func extractRar(conn *ssh.Client, content *domain.Content, tempDir string) error
 		return err
 	}
 
-	fmt.Printf("Extracting '%s'\n", content.ItemName)
+	log.Info().Str("item", content.ItemName).Msg("Extracting")
 	cmd := "unrar e -y \"" + content.FullPath + "\" \"" + tempDir + "\""
 	if err := session.Run(cmd); err != nil {
 		return err
@@ -110,17 +110,17 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 	for _, media := range content.MediaContent {
 		session, err := conn.NewSession()
 		if err != nil {
-			fmt.Printf("Error creating new session: %s\n", err.Error())
+			log.Error().Err(err).Msg("Error creating new session")
 			return
 		}
 
 		cmd := "mkdir -p \"" + content.DestinationPath + "\" ; scp -rP 2211 crazyfacka@joagonca.com:\"" + tempDir + "/" + media + "\" \"" + content.DestinationPath + "\""
 
 		if dryrun {
-			fmt.Printf("[DRY] Copying '%s'...\n", content.ItemName)
-			fmt.Printf("[DRY] %s\n", cmd)
+			log.Info().Str("item", content.ItemName).Msg("[DRY] Copying")
+			log.Info().Str("cmd", cmd).Msg("[DRY]")
 			time.Sleep(5 * time.Second)
-			fmt.Printf("[DRY] Copying %s complete\n", content.ItemName)
+			log.Info().Str("item", content.ItemName).Msg("[DRY] Copying complete")
 
 			wg.Add(1)
 			toHash <- content.FullPath
@@ -130,9 +130,9 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 			}
 		} else {
 			if err := session.Run(cmd); err != nil {
-				fmt.Printf("Error executing '%s': %s\n", cmd, err.Error())
+				log.Error().Str("cmd", cmd).Err(err).Msg("Error executing")
 			} else {
-				fmt.Printf("Copying %s complete\n", content.ItemName)
+				log.Info().Str("item", content.ItemName).Msg("Copying complete")
 				wg.Add(1)
 				toHash <- content.FullPath
 
@@ -162,14 +162,14 @@ func ProcessItems(b *domain.Bundle) error {
 		if c.IsDirectory {
 			files, err := GetContentsFromHost(b.Seedbox, c.FullPath)
 			if err != nil {
-				fmt.Printf("Error processing %s: %s\n", c.ItemName, err.Error())
+				log.Error().Str("item", c.ItemName).Err(err).Msg("Error processing")
 			}
 
 			for _, f := range files {
 				if rar.MatchString(f.ItemName) {
 					err = extractRar(b.Seedbox, &f, b.TempDir)
 					if err != nil {
-						fmt.Printf("Error processing %s: %s\n", c.ItemName, err.Error())
+						log.Error().Str("item", c.ItemName).Err(err).Msg("Error processing")
 						continue
 					}
 
@@ -181,7 +181,7 @@ func ProcessItems(b *domain.Bundle) error {
 					c.MediaContent = []string{f.ItemName}
 					go transferData(b.Player, c, c.FullPath[:len(c.FullPath)-1], nil, toHash, &wg, b.DryRun)
 				} else if zip.MatchString(f.ItemName) {
-					fmt.Println("zip", f)
+					log.Warn().Str("item", f.ItemName).Msg("ZIP handling not implemented")
 					continue
 				}
 			}

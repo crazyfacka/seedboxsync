@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/crazyfacka/seedboxsync/domain"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -35,7 +35,7 @@ func FilterDownloadedContents(b *domain.Bundle) error {
 			}
 
 			if res == 0 {
-				fmt.Printf("Adding '%s' to queue\n", item.ItemName)
+				log.Info().Str("item", item.ItemName).Msg("Adding to queue")
 				filtered = append(filtered, item)
 			}
 		}

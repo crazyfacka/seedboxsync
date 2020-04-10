@@ -1,14 +1,15 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
+	"time"
 
 	"github.com/crazyfacka/seedboxsync/domain"
 	"github.com/crazyfacka/seedboxsync/handler"
 	"github.com/crazyfacka/seedboxsync/modules"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -18,32 +19,38 @@ func main() {
 	viper.AddConfigPath(".")
 
 	dryrun := flag.Bool("dry", false, "doesn't transfer data from seedbox to player")
+	debug := flag.Bool("debug", false, "sets log level to debug")
 	flag.Parse()
 
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if *debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
+
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading config file: %s\n", err.Error())
+		log.Error().Err(err).Msg("Error reading config file")
 		os.Exit(-1)
 	}
 
-	fmt.Println("== Configuration ==")
-	b, _ := json.MarshalIndent(viper.AllSettings(), "", "  ")
-	fmt.Println(string(b))
+	log.Debug().Interface(".seedboxsync", viper.AllSettings()).Msg("Loaded configuration")
 
 	seedboxConn, err := modules.GetSSHConn(viper.GetStringMap("seedbox"))
 	if err != nil {
-		fmt.Printf("Unable to setup seedbox session: %s\n", err.Error())
+		log.Error().Err(err).Msg("Unable to setup seedbox session")
 		return
 	}
 
 	playerConn, err := modules.GetSSHConn(viper.GetStringMap("player"))
 	if err != nil {
-		fmt.Printf("Unable to setup player session: %v", err)
+		log.Error().Err(err).Msg("Unable to setup player session")
 		return
 	}
 
 	db, err := modules.GetDB()
 	if err != nil {
-		fmt.Printf("Unable to open DB: %s\n", err.Error())
+		log.Error().Err(err).Msg("Unable to open DB")
 		return
 	}
 
@@ -59,33 +66,32 @@ func main() {
 
 	contents, err := handler.GetContentsFromHost(bundle.Seedbox, bundle.SeedboxDir)
 	if err != nil {
-		fmt.Printf("Unable to get seedbox contents: %s\n", err.Error())
+		log.Error().Err(err).Msg("Unable to get seedbox contents")
 	}
 
 	bundle.Contents = contents
 
-	fmt.Println("== Contents ==")
 	err = handler.FilterDownloadedContents(bundle)
 	if err != nil {
-		fmt.Printf("Error filtering contents: %s\n", err.Error())
+		log.Error().Err(err).Msg("Error filtering contents")
 	}
 
 	err = handler.FillDestinationDirectories(bundle)
 	if err != nil {
-		fmt.Printf("Error finding destionation contents: %s\n", err.Error())
+		log.Error().Err(err).Msg("Error finding destination contents")
 	}
 
 	err = handler.ProcessItems(bundle)
 	if err != nil {
-		fmt.Printf("Error processing contents: %s\n", err.Error())
+		log.Error().Err(err).Msg("Error processing contents")
 	}
 
 	modules.CloseDB()
 
 	err = handler.RefreshLibrary(viper.GetStringMap("player")["host"].(string))
 	if err != nil {
-		fmt.Printf("Error refreshing library: %s\n", err.Error())
+		log.Error().Err(err).Msg("Error refreshing library")
 	}
 
-	fmt.Println("Done")
+	log.Info().Msg("Done")
 }
