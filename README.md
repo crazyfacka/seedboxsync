@@ -46,28 +46,15 @@ You need to add the private keys used to SSH into both the seedbox and the playe
 ```bash
 $ ./seedboxsync
 
-== Configuration ==
-{
-  "seedbox": {
-    "host": "example.com",
-    "port": 2222,
-    "user": "example",
-    "key": "keys/seedbox",
-    "dir": "/home/example/downloads",
-    "temp_dir": "/temp"
-  },
-  "player": {
-    "host": "player.example.com",
-    "port": 22,
-    "user": "player",
-    "key": "keys/player",
-    "dir": "/home/example/series"
-  }
-}
-== Contents ==
-Adding 'XXX.XXX.S16E20.1080p.WEB.H264-iNSiDiOUS' to queue
-Copying XXX.XXX.S16E20.1080p.WEB.H264-iNSiDiOUS complete
-Hashing '/home/example/downloads/XXX.XXX.S16E20.1080p.WEB.H264-iNSiDiOUS/'
-Refreshing player's library...
-Done
+2020-04-10T22:16:21+01:00 DBG Loaded configuration .seedboxsync={"player":{"dir":"/home/example/series","host":"player.example.com","key":"keys/player","port":22,"user":"player"},"seedbox":{"dir":"/home/example/downloads","host":"example.com","key":"keys/seedbox","port":2222,"temp_dir":"/temp","user":"example"}}
+2020-04-10T22:16:22+01:00 INF Adding to queue item=XXX.XXX.S16E21.1080p.WEB.H264-iNSiDiOUS
+2020-04-10T22:16:22+01:00 INF Adding to queue item=XXX.XXX.S11E19.1080p.HDTV.x264-TWERK
+2020-04-10T22:16:22+01:00 INF Copying item=XXX.XXX.S16E21.1080p.WEB.H264-iNSiDiOUS
+2020-04-10T22:16:22+01:00 INF Copying item=XXX.XXX.S11E19.1080p.HDTV.x264-TWERK
+2020-04-10T22:16:27+01:00 INF Copying complete item=XXX.XXX.S16E21.1080p.WEB.H264-iNSiDiOUS
+2020-04-10T22:16:27+01:00 INF Hashing data=/home/example/downloads/XXX.XXX.S16E21.1080p.WEB.H264-iNSiDiOUS/
+2020-04-10T22:16:27+01:00 INF Copying complete item=XXX.XXX.S11E19.1080p.HDTV.x264-TWERK
+2020-04-10T22:16:27+01:00 INF Hashing data=/home/example/downloads/XXX.XXX.S11E19.1080p.HDTV.x264-TWERK/
+2020-04-10T22:16:28+01:00 INF Refreshing player's library
+2020-04-10T22:16:28+01:00 INF Done
 ```
