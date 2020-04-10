@@ -3,12 +3,12 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 
 	"github.com/crazyfacka/seedboxsync/domain"
+	"github.com/rs/zerolog/log"
 
 	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
@@ -28,7 +28,7 @@ func RefreshLibrary(host string) error {
 		return err
 	}
 
-	fmt.Println("Refreshing player's library...")
+	log.Info().Msg("Refreshing player's library...")
 	resp, err := http.Post("http://"+host+":8080/jsonrpc", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return err
