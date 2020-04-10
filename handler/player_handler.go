@@ -28,7 +28,7 @@ func RefreshLibrary(host string) error {
 		return err
 	}
 
-	log.Info().Msg("Refreshing player's library...")
+	log.Info().Msg("Refreshing player's library")
 	resp, err := http.Post("http://"+host+":8080/jsonrpc", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return err
