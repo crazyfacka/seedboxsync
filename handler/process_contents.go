@@ -155,8 +155,11 @@ func ProcessItems(b *domain.Bundle) error {
 
 	filesToDelete := make(chan string, 2)
 	toHash := make(chan string, 2)
-	go deleteWhatsComplete(b.Seedbox, filesToDelete, &wg)
-	go storeHashInDB(b.DB, toHash, &wg)
+
+	if len(b.Contents) > 0 {
+		go deleteWhatsComplete(b.Seedbox, filesToDelete, &wg)
+		go storeHashInDB(b.DB, toHash, &wg)
+	}
 
 	for _, c := range b.Contents {
 		if c.IsDirectory {
