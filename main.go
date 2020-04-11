@@ -88,9 +88,13 @@ func main() {
 
 	modules.CloseDB()
 
-	err = handler.RefreshLibrary(viper.GetStringMap("player")["host"].(string))
-	if err != nil {
-		log.Error().Err(err).Msg("Error refreshing library")
+	if len(bundle.Contents) > 0 {
+		err = handler.RefreshLibrary(viper.GetStringMap("player")["host"].(string))
+		if err != nil {
+			log.Error().Err(err).Msg("Error refreshing library")
+		}
+	} else {
+		log.Info().Msg("Nothing to update")
 	}
 
 	log.Info().Msg("Done")
