@@ -14,10 +14,6 @@ import (
 )
 
 func main() {
-	viper.SetConfigName(".seedboxsync")
-	viper.SetConfigType("json")
-	viper.AddConfigPath(".")
-
 	dryrun := flag.Bool("dry", false, "doesn't transfer data from seedbox to player")
 	debug := flag.Bool("debug", false, "sets log level to debug")
 	flag.Parse()
@@ -28,6 +24,11 @@ func main() {
 	}
 
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
+	log.Info().Msg("Starting seedboxsync")
+
+	viper.SetConfigName(".seedboxsync")
+	viper.SetConfigType("json")
+	viper.AddConfigPath(".")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Error().Err(err).Msg("Error reading config file")
