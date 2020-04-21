@@ -11,6 +11,7 @@ You'll need:
 * Go >= 1.14
 * SSH agent running on both machines, with support for public/private key authentication
 * A folder to where the downloads are copied once complete - the tool can't work against a directory in which the downloads are progressing
+* A MySQL/MariaDB installation in case you want to define a `db` block in the configuration file (tested with MariaDB 10.4), otherwise fallsback to the local SQLite3 file
 
 ## Build & configure
 
@@ -26,6 +27,7 @@ cp sample.seedboxsync .seedboxsync
 
 Edit the configuration file `.seedboxsync` which is already populated with some sample configuration parameters.
 
+**db (optional)** block with information to connect to a remote MySQL database<br/>
 **host** hostname or IP address of the machine<br/>
 **port** port to where the SSH agent is listening<br/>
 **user** user with which the application should login<br/>
