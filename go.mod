@@ -3,6 +3,7 @@ module github.com/crazyfacka/seedboxsync
 go 1.13
 
 require (
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rs/zerolog v1.18.0

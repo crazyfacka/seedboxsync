@@ -49,7 +49,7 @@ func main() {
 		return
 	}
 
-	db, err := modules.GetDB()
+	db, err := modules.GetDB(viper.GetStringMap("db"))
 	if err != nil {
 		log.Error().Err(err).Msg("Unable to open DB")
 		return

@@ -1,4 +1,11 @@
 {
+  "db": {
+    "host": "db.example.com",
+    "port": "3306",
+    "user": "example",
+    "password": "examplepwd",
+    "schema": "exampleschema"
+  },
   "seedbox": {
     "host": "example.com",
     "port": 2222,
