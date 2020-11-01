@@ -15,6 +15,7 @@ import (
 
 func main() {
 	dryrun := flag.Bool("dry", false, "doesn't transfer data from seedbox to player")
+	norefresh := flag.Bool("norefresh", false, "doesn't refresh data from player")
 	debug := flag.Bool("debug", false, "sets log level to debug")
 	flag.Parse()
 
@@ -89,13 +90,15 @@ func main() {
 
 	modules.CloseDB()
 
-	if len(bundle.Contents) > 0 {
-		err = handler.RefreshLibrary(viper.GetStringMap("player")["host"].(string))
-		if err != nil {
-			log.Error().Err(err).Msg("Error refreshing library")
+	if !*norefresh {
+		if len(bundle.Contents) > 0 {
+			err = handler.RefreshLibrary(viper.GetStringMap("player")["host"].(string))
+			if err != nil {
+				log.Error().Err(err).Msg("Error refreshing library")
+			}
+		} else {
+			log.Info().Msg("Nothing to update")
 		}
-	} else {
-		log.Info().Msg("Nothing to update")
 	}
 
 	log.Info().Msg("Done")

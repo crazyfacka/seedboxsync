@@ -114,7 +114,7 @@ func transferData(conn *ssh.Client, content domain.Content, tempDir string, file
 			return
 		}
 
-		cmd := "mkdir -p \"" + content.DestinationPath + "\" ; scp -rP 2211 crazyfacka@joagonca.com:\"" + tempDir + "/" + media + "\" \"" + content.DestinationPath + "\""
+		cmd := "mkdir -p \"" + content.DestinationPath + "\" ; scp -rP 2211 root@joagonca.com:\"" + tempDir + "/" + media + "\" \"" + content.DestinationPath + "\""
 
 		if dryrun {
 			log.Info().Str("item", content.ItemName).Msg("[DRY] Copying")
